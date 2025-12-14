@@ -1,0 +1,39 @@
+{
+  "MigrationStrategy": {
+    "Mode": "FreshBackup",
+    "FinalCutover": true
+  },
+  "Databases": {
+    "Mode": "Custom",
+    "IncludeList": [],
+    "ExcludeList": ["tempdb", "model", "msdb", "distribution", "SSISDB", "ReportServer", "ReportServerTempDB"]
+  },
+  "ServerObjects": {
+    "Logins": { "Mode": "Custom", "IncludeList": [], "ExcludeList": ["##MS_*", "sa"] },
+    "Credentials": { "Mode": "Custom", "IncludeList": [], "ExcludeList": [] },
+    "AgentProxies": { "Mode": "Custom", "IncludeList": [], "ExcludeList": [] },
+    "LinkedServers": { "Mode": "Custom", "IncludeList": [], "ExcludeList": [] },
+    "AgentJobs": { "Mode": "Custom", "IncludeList": [], "ExcludeList": [] },
+    "DatabaseMail": { "Mode": "All" },
+    "SpConfigure": { "Mode": "All" },
+    "Audits": { "Mode": "Custom", "IncludeList": [], "ExcludeList": [] },
+    "ServerAuditSpecs": { "Mode": "All" },
+    "ResourceGovernor": { "Mode": "All" },
+    "CustomErrors": { "Mode": "All" },
+    "XESessions": { "Mode": "Custom", "IncludeList": [], "ExcludeList": [] },
+    "Endpoints": { "Mode": "Custom", "IncludeList": [], "ExcludeList": [] },
+    "ServerTriggers": { "Mode": "None" },
+    "PolicyManagement": { "Mode": "Custom", "IncludeList": [], "ExcludeList": [] },
+    "CentralManagementServer": { "Mode": "All" }
+  },
+  "DatabaseObjects": {
+    "TDECertificates": { "Mode": "All" },
+    "DatabaseMasterKeys": { "Mode": "All" },
+    "EnableClr": true,
+    "EnableServiceBroker": true
+  },
+  "Special": {
+    "SSISDB": false,
+    "Replication": false
+  }
+}
