@@ -1,7 +1,78 @@
+$dbParams = @{
+    SourceInstance = "hos1\inst1"
+    TargetInstance = "hos2\inst2"
+}                            
+.\Invoke-SqlInstanceMigration.ps1  @dbParams
 
-Parameter -SharedPath is required when MigrationStrategy.Mode = 'FreshBackup'
-At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:422 char:9
-+         throw "Parameter -SharedPath is required when MigrationStrate ...
-+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : OperationStopped: (Parameter -Shar...= 'FreshBackup':String) [], RuntimeException
-    + FullyQualifiedErrorId : Parameter -SharedPath is required when MigrationStrategy.Mode = 'FreshBackup'
+
+
+==================================================
+SQL INSTANCE MIGRATION AUDIT LOG
+Timestamp:      2025-12-15T14:54:56.1269755+01:00
+Run By:         TDA001\jf66510
+Run On:         S2S00EUJ
+Source:         hos1\inst1
+Target:         hos2\inst2
+Config:         
+==================================================
+2025-12-15 14:54:56 [Info] Running pre-migration validation...
+Get-DbaInstanceProperty : A parameter cannot be found that matches parameter name 'Name'.
+At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:178 char:73
++ ...  = Get-DbaInstanceProperty -SqlInstance $SourceInstance -Name Product ...
++                                                             ~~~~~
+    + CategoryInfo          : InvalidArgument: (:) [Get-DbaInstanceProperty], ParameterBindingException
+    + FullyQualifiedErrorId : NamedParameterNotFound,Get-DbaInstanceProperty
+ 
+Get-DbaInstanceProperty : A parameter cannot be found that matches parameter name 'Name'.
+At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:179 char:73
++ ...  = Get-DbaInstanceProperty -SqlInstance $TargetInstance -Name Product ...
++                                                             ~~~~~
+    + CategoryInfo          : InvalidArgument: (:) [Get-DbaInstanceProperty], ParameterBindingException
+    + FullyQualifiedErrorId : NamedParameterNotFound,Get-DbaInstanceProperty
+ 
+2025-12-15 14:54:58 [Success] ✅ Version compatibility:  → 
+2025-12-15 14:54:58 [Success] ✅ Edition match: 
+2025-12-15 14:54:58 [Success] ✅ Collation match: 
+2025-12-15 14:54:58 [Info] Collecting inventory from hos1\inst1...
+Get-DbaAudit : The term 'Get-DbaAudit' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that the 
+path is correct and try again.
+At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:81 char:29
++         Audits           = (Get-DbaAudit -SqlInstance $SqlInstance).N ...
++                             ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Get-DbaAudit:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+The property 'TdeDatabases' cannot be found on this object. Verify that the property exists and can be set.
+At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:83 char:5
++     $inventory.TdeDatabases = (Get-DbaDatabase -SqlInstance $SqlInsta ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
+    + FullyQualifiedErrorId : PropertyNotFound
+ 
+The property 'ClrDatabases' cannot be found on this object. Verify that the property exists and can be set.
+At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:93 char:5
++     $inventory.ClrDatabases = $clrDbs
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
+    + FullyQualifiedErrorId : PropertyNotFound
+ 
+2025-12-15 14:55:02 [Info] Inventory complete.
+Resolve-MigrationScope : Cannot process argument transformation on parameter 'Config'. Cannot convert value "@{MigrationStrategy=; Databases=; ServerObjects=; DatabaseObjects=; Special=}" to type 
+"System.Collections.Hashtable". Error: "Cannot convert the "@{MigrationStrategy=; Databases=; ServerObjects=; DatabaseObjects=; Special=}" value of type "System.Management.Automation.PSCustomObject" to 
+type "System.Collections.Hashtable"."
+At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:432 char:45
++     $scope = Resolve-MigrationScope -Config $config -Inventory $inven ...
++                                             ~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Resolve-MigrationScope], ParameterBindingArgumentTransformationException
+    + FullyQualifiedErrorId : ParameterArgumentTransformationError,Resolve-MigrationScope
+ 
+Write-MigrationSummary : Cannot process argument transformation on parameter 'Config'. Cannot convert value "@{MigrationStrategy=; Databases=; ServerObjects=; DatabaseObjects=; Special=}" to type 
+"System.Collections.Hashtable". Error: "Cannot convert the "@{MigrationStrategy=; Databases=; ServerObjects=; DatabaseObjects=; Special=}" value of type "System.Management.Automation.PSCustomObject" to 
+type "System.Collections.Hashtable"."
+At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:627 char:72
++ ... onSummary -Scope $scope -Inventory $inventory -Config $config -Errors ...
++                                                           ~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Write-MigrationSummary], ParameterBindingArgumentTransformationException
+    + FullyQualifiedErrorId : ParameterArgumentTransformationError,Write-MigrationSummary
+ 
+
