@@ -1,5 +1,5 @@
 # SqlInstanceMigrator.psm1
-# Final frozen version — simplified, flexible, no regressions
+# Final frozen version — simplified, flexible, no regressions, with summary report
 
 $script:LogPath = $null
 $script:SourceInstance = $null
@@ -156,6 +156,147 @@ function Invoke-MigrationStep {
     }
 }
 
+function Write-MigrationSummary {
+    <#
+    .SYNOPSIS
+        Generates a final audit table of what was migrated, skipped, and failed.
+    #>
+    param(
+        [hashtable]$Scope,
+        [hashtable]$Inventory,
+        [hashtable]$Config,
+        [hashtable]$Errors
+    )
+
+    Write-MigrationEvent "Generating migration summary..." -Level Info
+
+    $report = @()
+    
+    # Databases
+    $dbMigrated = if ($Scope.Databases) { $Scope.Databases.Count } else { 0 }
+    $dbSkipped = if ($Config.Databases.Mode -eq "None") { $Inventory.Databases.Count } else { 0 }
+    $dbFailed = if ($Errors.Database) { 1 } else { 0 }
+    $report += [PSCustomObject]@{
+        ObjectType = "Databases"
+        Migrated  = $dbMigrated
+        Skipped   = $dbSkipped
+        Failed    = $dbFailed
+    }
+
+    # Logins
+    $loginMigrated = if ($Scope.Logins) { $Scope.Logins.Count } else { 0 }
+    $loginSkipped = if ($Config.ServerObjects.Logins.Mode -eq "None") { $Inventory.Logins.Count } else { 0 }
+    $loginFailed = if ($Errors.Login) { 1 } else { 0 }
+    $report += [PSCustomObject]@{
+        ObjectType = "Logins"
+        Migrated  = $loginMigrated
+        Skipped   = $loginSkipped
+        Failed    = $loginFailed
+    }
+
+    # Agent Proxies
+    $proxyMigrated = if ($Scope.AgentProxies) { $Scope.AgentProxies.Count } else { 0 }
+    $proxySkipped = if ($Config.ServerObjects.AgentProxies.Mode -eq "None") { $Inventory.AgentProxies.Count } else { 0 }
+    $proxyFailed = if ($Errors.Proxy) { 1 } else { 0 }
+    $report += [PSCustomObject]@{
+        ObjectType = "Agent Proxies"
+        Migrated  = $proxyMigrated
+        Skipped   = $proxySkipped
+        Failed    = $proxyFailed
+    }
+
+    # Credentials
+    $credMigrated = if ($Scope.Credentials) { $Scope.Credentials.Count } else { 0 }
+    $credSkipped = if ($Config.ServerObjects.Credentials.Mode -eq "None") { $Inventory.Credentials.Count } else { 0 }
+    $credFailed = if ($Errors.Credential) { 1 } else { 0 }
+    $report += [PSCustomObject]@{
+        ObjectType = "Credentials"
+        Migrated  = $credMigrated
+        Skipped   = $credSkipped
+        Failed    = $credFailed
+    }
+
+    # Agent Jobs
+    $jobMigrated = if ($Scope.AgentJobs) { $Scope.AgentJobs.Count } else { 0 }
+    $jobSkipped = if ($Config.ServerObjects.AgentJobs.Mode -eq "None") { $Inventory.AgentJobs.Count } else { 0 }
+    $jobFailed = if ($Errors.Job) { 1 } else { 0 }
+    $report += [PSCustomObject]@{
+        ObjectType = "Agent Jobs"
+        Migrated  = $jobMigrated
+        Skipped   = $jobSkipped
+        Failed    = $jobFailed
+    }
+
+    # Policies & Conditions
+    $polMigrated = if ($Scope.Policies) { $Scope.Policies.Count } else { 0 }
+    $polSkipped = if ($Config.ServerObjects.PolicyManagement.Mode -eq "None") { $Inventory.Policies.Count } else { 0 }
+    $polFailed = if ($Errors.Policy) { 1 } else { 0 }
+    $report += [PSCustomObject]@{
+        ObjectType = "Policies & Conditions"
+        Migrated  = $polMigrated
+        Skipped   = $polSkipped
+        Failed    = $polFailed
+    }
+
+    # TDE Certificates
+    $tdeSkipped = if ($Config.DatabaseObjects.TDECertificates.Mode -eq "None") { 
+        if ($Inventory.TdeDatabases) { $Inventory.TdeDatabases.Count } else { 0 } 
+    } else { 0 }
+    $tdeFailed = if ($Errors.Tde) { 1 } else { 0 }
+    $tdeMigrated = if ($Inventory.TdeDatabases -and $tdeFailed -eq 0 -and $tdeSkipped -eq 0) { 
+        $Inventory.TdeDatabases.Count 
+    } else { 0 }
+    $report += [PSCustomObject]@{
+        ObjectType = "TDE Certificates"
+        Migrated  = $tdeMigrated
+        Skipped   = $tdeSkipped
+        Failed    = $tdeFailed
+    }
+
+    # CLR Enablement
+    $clrSkipped = if (-not $Config.DatabaseObjects.EnableClr) { 
+        if ($Inventory.ClrDatabases) { 1 } else { 0 } 
+    } else { 0 }
+    $clrFailed = if ($Errors.Clr) { 1 } else { 0 }
+    $clrMigrated = if ($Inventory.ClrDatabases -and $clrFailed -eq 0 -and $clrSkipped -eq 0) { 1 } else { 0 }
+    $report += [PSCustomObject]@{
+        ObjectType = "CLR Enablement"
+        Migrated  = $clrMigrated
+        Skipped   = $clrSkipped
+        Failed    = $clrFailed
+    }
+
+    # Output table
+    Write-MigrationEvent "" -Level Info
+    Write-MigrationEvent "╔════════════════════════════════════════════════════╗" -Level Info
+    Write-MigrationEvent "║              MIGRATION SUMMARY REPORT             ║" -Level Info
+    Write-MigrationEvent "╠════════════════╦═══════════╦══════════╦══════════╣" -Level Info
+    Write-MigrationEvent "║ Object Type      ║ Migrated  ║ Skipped  ║ Failed   ║" -Level Info
+    Write-MigrationEvent "╠════════════════╬═══════════╬══════════╬══════════╣" -Level Info
+
+    foreach ($row in $report) {
+        $mig = if ($row.Migrated -eq 0) { "" } else { $row.Migrated.ToString() }
+        $skip = if ($row.Skipped -eq 0) { "" } else { $row.Skipped.ToString() }
+        $fail = if ($row.Failed -eq 0) { "" } else { "❌" }
+        $line = ("║ {0,-16} ║ {1,9} ║ {2,8} ║ {3,8} ║" -f $row.ObjectType, $mig, $skip, $fail)
+        if ($row.Failed -gt 0) {
+            Write-MigrationEvent $line -Level Error
+        } else {
+            Write-MigrationEvent $line -Level Info
+        }
+    }
+
+    Write-MigrationEvent "╚════════════════╩═══════════╩══════════╩══════════╝" -Level Info
+    Write-MigrationEvent "" -Level Info
+
+    $totalFailed = ($report | Measure-Object -Property Failed -Sum).Sum
+    if ($totalFailed -gt 0) {
+        Write-MigrationEvent "❌ Migration completed with $totalFailed failure(s). Review log for details." -Level Error
+    } else {
+        Write-MigrationEvent "✅ Migration completed successfully!" -Level Success
+    }
+}
+
 function Start-SqlInstanceMigration {
     <#
     .SYNOPSIS
@@ -191,7 +332,7 @@ function Start-SqlInstanceMigration {
         [switch]$WhatIf
     )
 
-    # Load config to determine strategy
+    # Load config
     if ($ConfigPath -and (Test-Path $ConfigPath)) {
         $config = Get-Content $ConfigPath | ConvertFrom-Json -AsHashtable
     } else {
@@ -203,13 +344,16 @@ function Start-SqlInstanceMigration {
         }
     }
 
-    # Validate SharedPath based on strategy
-    if ($null -eq $config.MigrationStrategy.Mode) {
-        $strategy = "FreshBackup"
-    } else {
+    # Determine strategy with PowerShell 5.1-compatible logic
+    if ($config.MigrationStrategy -and 
+        $config.MigrationStrategy.Mode -and 
+        $config.MigrationStrategy.Mode -is [string]) {
         $strategy = $config.MigrationStrategy.Mode
+    } else {
+        $strategy = "FreshBackup"
     }
-    
+
+    # Validate SharedPath based on strategy
     if ($strategy -eq "FreshBackup" -and (-not $SharedPath)) {
         throw "Parameter -SharedPath is required when MigrationStrategy.Mode = 'FreshBackup'"
     }
@@ -266,6 +410,18 @@ function Start-SqlInstanceMigration {
         return
     }
 
+    # Initialize error tracker
+    $ErrorTracker = @{
+        Database   = $false
+        Login      = $false
+        Proxy      = $false
+        Credential = $false
+        Job        = $false
+        Policy     = $false
+        Tde        = $false
+        Clr        = $false
+    }
+
     # TDE Certificates
     if ($inventory.TdeDatabases -and $config.DatabaseObjects.TDECertificates.Mode -ne "None") {
         $success = Invoke-MigrationStep -StepName "TDE Certificate Migration" -Action {
@@ -288,7 +444,10 @@ WITH PRIVATE KEY (FILE = '$(Join-Path $certDir "$name.pvk")', DECRYPTION BY PASS
 "@
             }
         } -SuccessMessage "TDE certificates migrated."
-        if (-not $success) { throw "TDE migration failed" }
+        if (-not $success) { 
+            $ErrorTracker.Tde = $true
+            throw "TDE migration failed" 
+        }
     }
 
     # DATABASES
@@ -315,69 +474,101 @@ WITH PRIVATE KEY (FILE = '$(Join-Path $certDir "$name.pvk")', DECRYPTION BY PASS
         $success = Invoke-MigrationStep -StepName "Database Migration" -Action {
             Copy-DbaDatabase @dbParams
         } -SuccessMessage "Migrated databases: $($scope.Databases -join ', ')"
-        if (-not $success) { throw "Database migration failed" }
+        if (-not $success) { 
+            $ErrorTracker.Database = $true
+            throw "Database migration failed" 
+        }
     }
 
-    # SECURITY & SERVER OBJECTS
+    # CREDENTIALS
     if ($scope.Credentials) {
         $success = Invoke-MigrationStep -StepName "Credential Migration" -Action {
             foreach ($c in $scope.Credentials) { Copy-DbaCredential -Source $SourceInstance -Destination $TargetInstance -Name $c -Force }
         } -SuccessMessage "Migrated credentials."
-        if (-not $success) { throw "Credential migration failed" }
+        if (-not $success) { 
+            $ErrorTracker.Credential = $true
+            throw "Credential migration failed" 
+        }
     }
 
+    # AGENT PROXIES
     if ($scope.AgentProxies) {
         $success = Invoke-MigrationStep -StepName "Agent Proxy Migration" -Action {
             foreach ($p in $scope.AgentProxies) { Copy-DbaAgentProxy -Source $SourceInstance -Destination $TargetInstance -Proxy $p -Force }
         } -SuccessMessage "Migrated proxies: $($scope.AgentProxies -join ', ')"
-        if (-not $success) { throw "Proxy migration failed" }
+        if (-not $success) { 
+            $ErrorTracker.Proxy = $true
+            throw "Proxy migration failed" 
+        }
     }
 
+    # CLR
     if ($inventory.ClrDatabases -and $config.DatabaseObjects.EnableClr) {
         $clrDbs = $inventory.ClrDatabases | Where-Object { $_ -in $scope.Databases }
         if ($clrDbs) {
             $success = Invoke-MigrationStep -StepName "CLR Enablement" -Action {
                 Invoke-DbaQuery -SqlInstance $TargetInstance -Query "sp_configure 'clr enabled', 1; RECONFIGURE"
             } -SuccessMessage "CLR enabled."
-            if (-not $success) { throw "CLR enablement failed" }
+            if (-not $success) { 
+                $ErrorTracker.Clr = $true
+                throw "CLR enablement failed" 
+            }
         }
     }
 
+    # LOGINS
     if ($scope.Logins) {
         $success = Invoke-MigrationStep -StepName "Login Migration" -Action {
             Copy-DbaLogin -Source $SourceInstance -Destination $TargetInstance -Include $scope.Logins -Force
         } -SuccessMessage "Migrated logins."
-        if (-not $success) { throw "Login migration failed" }
+        if (-not $success) { 
+            $ErrorTracker.Login = $true
+            throw "Login migration failed" 
+        }
     }
 
+    # AGENT JOBS
     if ($scope.AgentJobs) {
         $success = Invoke-MigrationStep -StepName "Agent Job Migration" -Action {
             Copy-DbaAgentJob -Source $SourceInstance -Destination $TargetInstance -Include $scope.AgentJobs -Force
         } -SuccessMessage "Migrated jobs."
-        if (-not $success) { throw "Job migration failed" }
+        if (-not $success) { 
+            $ErrorTracker.Job = $true
+            throw "Job migration failed" 
+        }
     }
 
+    # LINKED SERVERS
     if ($scope.LinkedServers) {
         $success = Invoke-MigrationStep -StepName "Linked Server Migration" -Action {
             foreach ($ls in $scope.LinkedServers) { Copy-DbaLinkedServer -Source $SourceInstance -Destination $TargetInstance -LinkedServer $ls -Force }
         } -SuccessMessage "Migrated linked servers."
-        if (-not $success) { throw "Linked server migration failed" }
+        if (-not $success) { 
+            # Not tracked in summary (not in report table) but logged
+            throw "Linked server migration failed" 
+        }
     }
 
+    # POLICIES
     if ($scope.Policies -and $scope.Conditions) {
         $success = Invoke-MigrationStep -StepName "Policy Migration" -Action {
             foreach ($cond in $scope.Conditions) { Copy-DbaPbmCondition -Source $SourceInstance -Destination $TargetInstance -Name $cond -Force }
             foreach ($pol in $scope.Policies) { Copy-DbaPbmPolicy -Source $SourceInstance -Destination $TargetInstance -Name $pol -Force }
         } -SuccessMessage "Migrated policies and conditions."
-        if (-not $success) { throw "Policy migration failed" }
+        if (-not $success) { 
+            $ErrorTracker.Policy = $true
+            throw "Policy migration failed" 
+        }
     }
 
+    # POST-MIGRATION
     if ($scope.Databases) {
         Write-MigrationEvent "Fixing orphaned users..." -Level Info
         Repair-DbaDbOrphanUser -SqlInstance $TargetInstance -Database $scope.Databases
     }
 
-    Write-MigrationEvent "✅ Migration completed successfully!" -Level Success
+    # FINAL SUMMARY
+    Write-MigrationSummary -Scope $scope -Inventory $inventory -Config $config -Errors $ErrorTracker
 }
 
 Export-ModuleMember -Function Start-SqlInstanceMigration
