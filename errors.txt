@@ -1,78 +1,46 @@
+PS C:\Users\jf66510\Documents\SqlInstanceMigrator> 
 $dbParams = @{
-    SourceInstance = "hos1\inst1"
-    TargetInstance = "hos2\inst2"
+    SourceInstance = "s2s007xl\POD21_DEV"
+    TargetInstance = "s2s00euj\MSS66_DEV"
 }                            
 .\Invoke-SqlInstanceMigration.ps1  @dbParams
 
-
-
 ==================================================
 SQL INSTANCE MIGRATION AUDIT LOG
-Timestamp:      2025-12-15T14:54:56.1269755+01:00
+Timestamp:      2025-12-15T15:56:57.0513472+01:00
 Run By:         TDA001\jf66510
 Run On:         S2S00EUJ
-Source:         hos1\inst1
-Target:         hos2\inst2
+Source:         s2s007xl\POD21_DEV
+Target:         s2s00euj\MSS66_DEV
 Config:         
 ==================================================
-2025-12-15 14:54:56 [Info] Running pre-migration validation...
-Get-DbaInstanceProperty : A parameter cannot be found that matches parameter name 'Name'.
-At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:178 char:73
-+ ...  = Get-DbaInstanceProperty -SqlInstance $SourceInstance -Name Product ...
-+                                                             ~~~~~
-    + CategoryInfo          : InvalidArgument: (:) [Get-DbaInstanceProperty], ParameterBindingException
-    + FullyQualifiedErrorId : NamedParameterNotFound,Get-DbaInstanceProperty
- 
-Get-DbaInstanceProperty : A parameter cannot be found that matches parameter name 'Name'.
-At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:179 char:73
-+ ...  = Get-DbaInstanceProperty -SqlInstance $TargetInstance -Name Product ...
-+                                                             ~~~~~
-    + CategoryInfo          : InvalidArgument: (:) [Get-DbaInstanceProperty], ParameterBindingException
-    + FullyQualifiedErrorId : NamedParameterNotFound,Get-DbaInstanceProperty
- 
-2025-12-15 14:54:58 [Success] ✅ Version compatibility:  → 
-2025-12-15 14:54:58 [Success] ✅ Edition match: 
-2025-12-15 14:54:58 [Success] ✅ Collation match: 
-2025-12-15 14:54:58 [Info] Collecting inventory from hos1\inst1...
-Get-DbaAudit : The term 'Get-DbaAudit' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that the 
-path is correct and try again.
-At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:81 char:29
-+         Audits           = (Get-DbaAudit -SqlInstance $SqlInstance).N ...
-+                             ~~~~~~~~~~~~
-    + CategoryInfo          : ObjectNotFound: (Get-DbaAudit:String) [], CommandNotFoundException
-    + FullyQualifiedErrorId : CommandNotFoundException
- 
-The property 'TdeDatabases' cannot be found on this object. Verify that the property exists and can be set.
-At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:83 char:5
-+     $inventory.TdeDatabases = (Get-DbaDatabase -SqlInstance $SqlInsta ...
-+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
-    + FullyQualifiedErrorId : PropertyNotFound
- 
-The property 'ClrDatabases' cannot be found on this object. Verify that the property exists and can be set.
-At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:93 char:5
-+     $inventory.ClrDatabases = $clrDbs
-+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
-    + FullyQualifiedErrorId : PropertyNotFound
- 
-2025-12-15 14:55:02 [Info] Inventory complete.
-Resolve-MigrationScope : Cannot process argument transformation on parameter 'Config'. Cannot convert value "@{MigrationStrategy=; Databases=; ServerObjects=; DatabaseObjects=; Special=}" to type 
-"System.Collections.Hashtable". Error: "Cannot convert the "@{MigrationStrategy=; Databases=; ServerObjects=; DatabaseObjects=; Special=}" value of type "System.Management.Automation.PSCustomObject" to 
-type "System.Collections.Hashtable"."
-At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:432 char:45
-+     $scope = Resolve-MigrationScope -Config $config -Inventory $inven ...
-+                                             ~~~~~~~
-    + CategoryInfo          : InvalidData: (:) [Resolve-MigrationScope], ParameterBindingArgumentTransformationException
-    + FullyQualifiedErrorId : ParameterArgumentTransformationError,Resolve-MigrationScope
- 
-Write-MigrationSummary : Cannot process argument transformation on parameter 'Config'. Cannot convert value "@{MigrationStrategy=; Databases=; ServerObjects=; DatabaseObjects=; Special=}" to type 
-"System.Collections.Hashtable". Error: "Cannot convert the "@{MigrationStrategy=; Databases=; ServerObjects=; DatabaseObjects=; Special=}" value of type "System.Management.Automation.PSCustomObject" to 
-type "System.Collections.Hashtable"."
-At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:627 char:72
-+ ... onSummary -Scope $scope -Inventory $inventory -Config $config -Errors ...
-+                                                           ~~~~~~~
-    + CategoryInfo          : InvalidData: (:) [Write-MigrationSummary], ParameterBindingArgumentTransformationException
-    + FullyQualifiedErrorId : ParameterArgumentTransformationError,Write-MigrationSummary
+2025-12-15 15:56:57 [Info] Running pre-migration validation...
+2025-12-15 15:56:57 [Success] ✅ Version compatibility: 15.0.4445 → 16.0.4215
+2025-12-15 15:56:57 [Success] ✅ Edition match: Enterprise Edition: Core-based Licensing (64-bit)
+2025-12-15 15:56:57 [Success] ✅ Collation match: SQL_Latin1_General_CP850_BIN2
+2025-12-15 15:56:57 [Info] Collecting inventory from s2s007xl\POD21_DEV...
+2025-12-15 15:57:02 [Info] Inventory complete.
+2025-12-15 15:57:02 [Info] Using last known backups from source msdb history.
+2025-12-15 15:57:02 [Info] Starting: Database Migration
+cmdlet Copy-DbaDatabase at command pipeline position 1
+Supply values for the following parameters:
+BackupRestore: true
+2025-12-15 15:57:16 [Error] Failed: Database Migration - Cannot process argument transformation on parameter 'BackupRestore'. Cannot convert value "System.String" to type "System.Management.Automation.Swit
+chParameter". Boolean parameters accept only Boolean values and numbers, such as $True, $False, 1 or 0.
+2025-12-15 15:57:16 [Warning] Hint: Check connectivity, permissions, and object existence.
+Database migration failed
+At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:493 char:13
++             throw "Database migration failed"
++             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Database migration failed:String) [], RuntimeException
+    + FullyQualifiedErrorId : Database migration failed
  
 
+PS C:\Users\jf66510\Documents\SqlInstanceMigrator> get-dbainstance
+get-dbainstance : The term 'get-dbainstance' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that 
+the path is correct and try again.
+At line:1 char:1
++ get-dbainstance
++ ~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (get-dbainstance:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
