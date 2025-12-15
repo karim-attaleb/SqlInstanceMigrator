@@ -386,15 +386,28 @@ function Start-SqlInstanceMigration {
 
     # Load config
     if ($ConfigPath -and (Test-Path $ConfigPath)) {
-        $config = Get-Content $ConfigPath | ConvertFrom-Json -AsHashtable
+        $json = Get-Content $ConfigPath -Raw
+        $config = ConvertFrom-Json $json
+        if ($null -eq $config) {
+            throw "Config file is empty or invalid."
+        }
     } else {
         $defaultConfigPath = Join-Path $PSScriptRoot "..\Config\migration-config.json"
         if (Test-Path $defaultConfigPath) {
-            $config = Get-Content $defaultConfigPath | ConvertFrom-Json -AsHashtable
+            $json = Get-Content $defaultConfigPath -Raw
+            $config = ConvertFrom-Json $json
+            if ($null -eq $config) {
+                throw "Default config file is empty or invalid."
+            }
         } else {
             throw "Config file not found. Provide -ConfigPath or place 'migration-config.json' in the Config/ folder."
         }
     }
+
+
+
+
+    
 
     # Determine strategy with PowerShell 5.1-compatible logic
     if ($config.MigrationStrategy -and 
