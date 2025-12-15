@@ -204,7 +204,12 @@ function Start-SqlInstanceMigration {
     }
 
     # Validate SharedPath based on strategy
-    $strategy = $config.MigrationStrategy.Mode ?? "FreshBackup"
+    if ($null -eq $config.MigrationStrategy.Mode) {
+        $strategy = "FreshBackup"
+    } else {
+        $strategy = $config.MigrationStrategy.Mode
+    }
+    
     if ($strategy -eq "FreshBackup" -and (-not $SharedPath)) {
         throw "Parameter -SharedPath is required when MigrationStrategy.Mode = 'FreshBackup'"
     }
