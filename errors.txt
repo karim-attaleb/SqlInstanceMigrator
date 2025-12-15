@@ -1,0 +1,22 @@
+
+PS C:\Users\jf66510\Documents\SqlInstanceMigrator> $dbParams = @{
+    SourceInstance = "s2s007xl\POD21_DEV"
+    TargetInstance = "s2s00euj\MSS66_DEV"
+    whatif=$true
+}                            
+.\Invoke-SqlInstanceMigration.ps1 - @dbParams
+Import-Module : The 'guid' member is not valid in the module manifest file 'C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psd1': Cannot convert value 
+"a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8" to type "System.Guid". Error: "Could not find any recognizable digits."
+At C:\Users\jf66510\Documents\SqlInstanceMigrator\Invoke-SqlInstanceMigration.ps1:16 char:1
++ Import-Module $modulePath -Force
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ResourceUnavailable: (C:\Users\jf6651...ceMigrator.psd1:String) [Import-Module], ArgumentException
+    + FullyQualifiedErrorId : Modules_InvalidManifest,Microsoft.PowerShell.Commands.ImportModuleCommand
+ 
+Start-SqlInstanceMigration : The term 'Start-SqlInstanceMigration' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was 
+included, verify that the path is correct and try again.
+At C:\Users\jf66510\Documents\SqlInstanceMigrator\Invoke-SqlInstanceMigration.ps1:27 char:1
++ Start-SqlInstanceMigration @Params
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Start-SqlInstanceMigration:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
