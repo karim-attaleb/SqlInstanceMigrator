@@ -405,19 +405,17 @@ function Start-SqlInstanceMigration {
     }
 
 
-
-
-    
-
-    # Determine strategy with PowerShell 5.1-compatible logic
-    if ($config.MigrationStrategy -and 
-        $config.MigrationStrategy.Mode -and 
-        $config.MigrationStrategy.Mode -is [string]) {
-        $strategy = $config.MigrationStrategy.Mode
-    } else {
-        $strategy = "FreshBackup"
+# Determine strategy — works in PowerShell 5.1
+$strategy = "FreshBackup"  # default
+if ($config.MigrationStrategy) {
+    $modeValue = $config.MigrationStrategy.Mode
+    if ($modeValue -is [string]) {
+        $strategy = $modeValue
+    } elseif ($modeValue -ne $null) {
+        # In PS 5.1, PSCustomObject properties may need .ToString()
+        $strategy = $modeValue.ToString()
     }
-
+}
     # Validate SharedPath based on strategy
     if ($strategy -eq "FreshBackup" -and (-not $SharedPath)) {
         throw "Parameter -SharedPath is required when MigrationStrategy.Mode = 'FreshBackup'"
