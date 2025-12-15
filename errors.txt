@@ -1,7 +1,7 @@
-Start-SqlInstanceMigration : A parameter with the name 'WhatIf' was defined multiple times for the command.
-At C:\Users\jf66510\Documents\SqlInstanceMigrator\Invoke-SqlInstanceMigration.ps1:27 char:1
-+ Start-SqlInstanceMigration @Params
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : MetadataError: (:) [], MetadataException
-    + FullyQualifiedErrorId : ParameterNameAlreadyExistsForCommand
 
+Parameter -SharedPath is required when MigrationStrategy.Mode = 'FreshBackup'
+At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:422 char:9
++         throw "Parameter -SharedPath is required when MigrationStrate ...
++         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Parameter -Shar...= 'FreshBackup':String) [], RuntimeException
+    + FullyQualifiedErrorId : Parameter -SharedPath is required when MigrationStrategy.Mode = 'FreshBackup'
