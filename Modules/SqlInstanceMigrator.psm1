@@ -1,5 +1,5 @@
 # SqlInstanceMigrator.psm1
-# Final frozen version — simplified, flexible, no regressions, with summary report
+# Final version with modular pre-migration validation
 
 $script:LogPath = $null
 $script:SourceInstance = $null
@@ -97,7 +97,7 @@ function Get-SqlInstanceInventory {
 function Get-FilteredObjectList {
     <#
     .SYNOPSIS
-        Filters a list of objects based on inclusion/exclusion rules.
+        Filters a list_of objects based on inclusion/exclusion rules.
     #>
     [CmdletBinding()]
     param(
@@ -153,6 +153,58 @@ function Invoke-MigrationStep {
         Write-MigrationEvent "Failed: $StepName - $($_.Exception.Message)" -Level Error
         Write-MigrationEvent "Hint: $FailureHint" -Level Warning
         return $false
+    }
+}
+
+function Invoke-PreMigrationValidation {
+    <#
+    .SYNOPSIS
+        Performs pre-migration validation checks.
+    .DESCRIPTION
+        Checks for:
+        - Version downgrade (blocks)
+        - Edition mismatch (warns)
+        - Collation mismatch (warns)
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$SourceInstance,
+        [string]$TargetInstance
+    )
+
+    Write-MigrationEvent "Running pre-migration validation..." -Level Info
+
+    # Get source and target properties
+    $sourceProps = Get-DbaInstanceProperty -SqlInstance $SourceInstance -Name ProductVersion, Edition, Collation
+    $targetProps = Get-DbaInstanceProperty -SqlInstance $TargetInstance -Name ProductVersion, Edition, Collation
+
+    $sourceVersion = ($sourceProps | Where-Object Name -eq "ProductVersion").Value
+    $targetVersion = ($targetProps | Where-Object Name -eq "ProductVersion").Value
+    $sourceEdition = ($sourceProps | Where-Object Name -eq "Edition").Value
+    $targetEdition = ($targetProps | Where-Object Name -eq "Edition").Value
+    $sourceCollation = ($sourceProps | Where-Object Name -eq "Collation").Value
+    $targetCollation = ($targetProps | Where-Object Name -eq "Collation").Value
+
+    # --- CHECK 1: VERSION DOWNGRADE (EXIT) ---
+    if ([version]$sourceVersion -gt [version]$targetVersion) {
+        $msg = "❌ BLOCKED: Source ($sourceVersion) is newer than target ($targetVersion). SQL Server downgrades are not supported."
+        Write-MigrationEvent $msg -Level Error
+        throw $msg
+    }
+    Write-MigrationEvent "✅ Version compatibility: $sourceVersion → $targetVersion" -Level Success
+
+    # --- CHECK 2: EDITION MISMATCH (WARN) ---
+    if ($sourceEdition -ne $targetEdition) {
+        Write-MigrationEvent "⚠️ WARNING: Edition mismatch. Source: '$sourceEdition', Target: '$targetEdition'. Some features may not be available." -Level Warning
+    } else {
+        Write-MigrationEvent "✅ Edition match: $sourceEdition" -Level Success
+    }
+
+    # --- CHECK 3: COLLATION MISMATCH (WARN) ---
+    if ($sourceCollation -ne $targetCollation) {
+        Write-MigrationEvent "⚠️ WARNING: Server collation mismatch. Source: '$sourceCollation', Target: '$targetCollation'. Review database collations post-migration." -Level Warning
+    } else {
+        Write-MigrationEvent "✅ Collation match: $sourceCollation" -Level Success
     }
 }
 
@@ -360,19 +412,13 @@ function Start-SqlInstanceMigration {
 
     Initialize-MigrationLogger -LogDirectory $LogPath -SourceInstance $SourceInstance -TargetInstance $TargetInstance -ConfigPath $ConfigPath
 
+    # --- PRE-MIGRATION VALIDATION (MODULAR) ---
+    Invoke-PreMigrationValidation -SourceInstance $SourceInstance -TargetInstance $TargetInstance
+
     $inventory = Get-SqlInstanceInventory -SqlInstance $SourceInstance
     Write-MigrationEvent "Inventory complete." -Level Info
 
-    # PRE-CHECKS
-    $sourceVersion = (Get-DbaInstanceProperty -SqlInstance $SourceInstance -Name ProductVersion).Value
-    $targetVersion = (Get-DbaInstanceProperty -SqlInstance $TargetInstance -Name ProductVersion).Value
-    if ([version]$sourceVersion -gt [version]$targetVersion) {
-        $msg = "Migration blocked: Source ($sourceVersion) is newer than target ($targetVersion). SQL Server downgrades are not supported."
-        Write-MigrationEvent $msg -Level Error
-        throw $msg
-    }
-    Write-MigrationEvent "Version check passed: $sourceVersion → $targetVersion" -Level Success
-
+    # --- DISK SPACE CHECK (only for FreshBackup) ---
     $scope = Resolve-MigrationScope -Config $config -Inventory $inventory
     if ($scope.Databases.Count -gt 0 -and $strategy -eq "FreshBackup") {
         $totalBytes = 0
