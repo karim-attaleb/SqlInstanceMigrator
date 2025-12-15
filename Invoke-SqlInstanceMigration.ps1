@@ -8,8 +8,8 @@ param(
     [Parameter(Mandatory)][string]$TargetInstance,
     [string]$SharedPath,
     [string]$ConfigPath,
-    [string]$LogPath,
-    [switch]$WhatIf
+    [string]$LogPath
+    
 )
 
 $modulePath = Join-Path $PSScriptRoot "Modules\SqlInstanceMigrator.psd1"
@@ -22,6 +22,6 @@ $Params = @{
 if ($SharedPath) { $Params.SharedPath = $SharedPath }
 if ($ConfigPath) { $Params.ConfigPath = $ConfigPath }
 if ($LogPath) { $Params.LogPath = $LogPath }
-if ($WhatIf) { $Params.WhatIf = $true }
+#if ($WhatIf) { $Params.WhatIf = $true }
 
 Start-SqlInstanceMigration @Params
