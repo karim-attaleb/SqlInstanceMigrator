@@ -12,8 +12,8 @@ function Initialize-MigrationLogger {
     param(
         [Parameter(Mandatory)][string]$LogDirectory,
         [string]$OperationName = "SqlMigration",
-        [string]$SourceInstance,
-        [string]$TargetInstance,
+        [DbaInstanceParameter]$SourceInstance,
+        [DbaInstanceParameter]$TargetInstance,
         [string]$ConfigPath
     )
     $script:SourceInstance = $SourceInstance
@@ -21,7 +21,7 @@ function Initialize-MigrationLogger {
     $script:ConfigPath = $ConfigPath
     $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
     $script:LogPath = Join-Path $LogDirectory "$OperationName-$timestamp.log"
-    $null = New-Item -ItemType Directory -Path $LogDirectory -Force -ErrorAction SilentlyContinue
+    $null = New-Item -ItemType Directory -Path $LogDirectory  -ErrorAction SilentlyContinue
     $audit = @"
 ==================================================
 SQL INSTANCE MIGRATION AUDIT LOG
@@ -71,7 +71,7 @@ function ConvertTo-Hashtable {
 
 function Get-SqlInstanceInventory {
     [CmdletBinding()]
-    param([string]$SqlInstance)
+    param([DbaInstanceParameter]$SqlInstance)
     Write-MigrationEvent "Collecting inventory from $SqlInstance..." -Level Info
 
     # Initialize inventory as hashtable
@@ -82,8 +82,8 @@ function Get-SqlInstanceInventory {
         AgentProxies     = @((Get-DbaAgentProxy -SqlInstance $SqlInstance -ErrorAction SilentlyContinue).Name)
         LinkedServers    = @((Get-DbaLinkedServer -SqlInstance $SqlInstance -ErrorAction SilentlyContinue).Name)
         AgentJobs        = @((Get-DbaAgentJob -SqlInstance $SqlInstance -ErrorAction SilentlyContinue).Name)
-        Endpoints        = @((Invoke-DbaQuery -SqlInstance $SqlInstance -Query "SELECT name FROM sys.endpoints" -ErrorAction SilentlyContinue -AbortOnError:$false).name)
-        ServerTriggers   = @((Invoke-DbaQuery -SqlInstance $SqlInstance -Query "SELECT name FROM sys.server_triggers" -ErrorAction SilentlyContinue -AbortOnError:$false).name)
+        Endpoints        = @((Invoke-DbaQuery -SqlInstance $SqlInstance -Query "SELECT name FROM sys.endpoints" -ErrorAction SilentlyContinue ).name)
+        ServerTriggers   = @((Invoke-DbaQuery -SqlInstance $SqlInstance -Query "SELECT name FROM sys.server_triggers" -ErrorAction SilentlyContinue ).name)
         Policies         = @((Get-DbaPbmPolicy -SqlInstance $SqlInstance -ErrorAction SilentlyContinue).Name)
         Conditions       = @((Get-DbaPbmCondition -SqlInstance $SqlInstance -ErrorAction SilentlyContinue).Name)
         RegisteredServers= @((Get-DbaRegisteredServer -SqlInstance $SqlInstance -ErrorAction SilentlyContinue).Name)
@@ -120,7 +120,7 @@ function Get-SqlInstanceInventory {
     $clrDbs = @()
     foreach ($db in $inventory['Databases']) {
         try {
-            $assemblies = Invoke-DbaQuery -SqlInstance $SqlInstance -Database $db -Query "SELECT TOP 1 1 FROM sys.assemblies WHERE is_user_defined = 1" -ErrorAction SilentlyContinue -AbortOnError:$false
+            $assemblies = Invoke-DbaQuery -SqlInstance $SqlInstance -Database $db -Query "SELECT TOP 1 1 FROM sys.assemblies WHERE is_user_defined = 1" -ErrorAction SilentlyContinue 
             if ($assemblies -and $assemblies.Count -gt 0) { $clrDbs += $db }
         } catch {
             Write-MigrationEvent "Warning: Could not check CLR in database '$db'." -Level Warning
@@ -192,22 +192,22 @@ function Invoke-MigrationStep {
 function Invoke-PreMigrationValidation {
     [CmdletBinding()]
     param(
-        [string]$SourceInstance,
-        [string]$TargetInstance
+        [DbaInstanceParameter]$SourceInstance,
+        [DbaInstanceParameter]$TargetInstance
     )
 
     Write-MigrationEvent "Running pre-migration validation..." -Level Info
 
     # ✅ Use Get-DbaInstance (no -Name parameter)
-    $sourceProps = Get-DbaInstance -SqlInstance $SourceInstance
-    $targetProps = Get-DbaInstance -SqlInstance $TargetInstance
+    #$SourceInstance = Connect-DbaInstance -SqlInstance $SourceInstance
+    #$TargetInstance = Connect-DbaInstance -SqlInstance $TargetInstance
 
-    $sourceVersion = if ($sourceProps.Version) { $sourceProps.Version.ToString() } else { "Unknown" }
-    $targetVersion = if ($targetProps.Version) { $targetProps.Version.ToString() } else { "Unknown" }
-    $sourceEdition = if ($sourceProps.Edition) { $sourceProps.Edition } else { "Unknown" }
-    $targetEdition = if ($targetProps.Edition) { $targetProps.Edition } else { "Unknown" }
-    $sourceCollation = if ($sourceProps.Collation) { $sourceProps.Collation } else { "Unknown" }
-    $targetCollation = if ($targetProps.Collation) { $targetProps.Collation } else { "Unknown" }
+    $sourceVersion = if ($SourceInstance.Version) { $SourceInstance.Version.ToString() } else { "Unknown" }
+    $targetVersion = if ($TargetInstance.Version) { $TargetInstance.Version.ToString() } else { "Unknown" }
+    $sourceEdition = if ($SourceInstance.Edition) { $SourceInstance.Edition } else { "Unknown" }
+    $targetEdition = if ($TargetInstance.Edition) { $TargetInstance.Edition } else { "Unknown" }
+    $sourceCollation = if ($SourceInstance.Collation) { $SourceInstance.Collation } else { "Unknown" }
+    $targetCollation = if ($TargetInstance.Collation) { $TargetInstance.Collation } else { "Unknown" }
 
     if ($sourceVersion -ne "Unknown" -and $targetVersion -ne "Unknown") {
         try {
@@ -307,10 +307,10 @@ function Write-MigrationSummary {
     # Output table
     Write-MigrationEvent "" -Level Info
     Write-MigrationEvent "╔════════════════════════════════════════════════════╗" -Level Info
-    Write-MigrationEvent "║              MIGRATION SUMMARY REPORT             ║" -Level Info
-    Write-MigrationEvent "╠════════════════╦═══════════╦══════════╦══════════╣" -Level Info
-    Write-MigrationEvent "║ Object Type      ║ Migrated  ║ Skipped  ║ Failed   ║" -Level Info
-    Write-MigrationEvent "╠════════════════╬═══════════╬══════════╬══════════╣" -Level Info
+    Write-MigrationEvent "║              MIGRATION SUMMARY REPORT              ║" -Level Info
+    Write-MigrationEvent "╠════════════════╦═══════════╦══════════╦══════════  ╣" -Level Info
+    Write-MigrationEvent "║ Object Type    ║ Migrated  ║ Skipped  ║ Failed     ║" -Level Info
+    Write-MigrationEvent "╠════════════════╬═══════════╬══════════╬══════════  ╣" -Level Info
 
     foreach ($row in $report) {
         $mig = if ($row.Migrated -eq 0) { "" } else { $row.Migrated.ToString() }
@@ -338,8 +338,8 @@ function Write-MigrationSummary {
 function Start-SqlInstanceMigration {
     [CmdletBinding(SupportsShouldProcess)]
     param(
-        [Parameter(Mandatory)][string]$SourceInstance,
-        [Parameter(Mandatory)][string]$TargetInstance,
+        [Parameter(Mandatory)][DbaInstanceParameter]$SourceInstance,
+        [Parameter(Mandatory)][DbaInstanceParameter]$TargetInstance,
         [string]$SharedPath,
         [string]$ConfigPath,
         [string]$LogPath = "$PSScriptRoot\..\logs"
@@ -401,9 +401,8 @@ function Start-SqlInstanceMigration {
         $requiredGB = [math]::Round($totalBytes / 1GB, 2)
         Write-MigrationEvent "Total restore space required: $requiredGB GB" -Level Info
 
-        $targetProps = Get-DbaInstance -SqlInstance $TargetInstance
-        $dataPath = if ($targetProps.DataDirectory) { $targetProps.DataDirectory } else { "$env:SystemDrive\" }
-        $logPathDir = if ($targetProps.LogDirectory) { $targetProps.LogDirectory } else { "$env:SystemDrive\" }
+        $dataPath = if ($TargetInstance.DataDirectory) { $TargetInstance.DataDirectory } else { "$env:SystemDrive\" }
+        $logPathDir = if ($TargetInstance.LogDirectory) { $TargetInstance.LogDirectory } else { "$env:SystemDrive\" }
 
         try {
             $dataDrive = $dataPath.Substring(0, 3).TrimEnd(':\')
@@ -441,14 +440,14 @@ function Start-SqlInstanceMigration {
     if ($inventory['TdeDatabases'] -and $config['DatabaseObjects']['TDECertificates']['Mode'] -ne "None") {
         $success = Invoke-MigrationStep -StepName "TDE Certificate Migration" -Action {
             $certDir = Join-Path $SharedPath "certs"
-            $null = New-Item -ItemType Directory -Path $certDir -Force
+            $null = New-Item -ItemType Directory -Path $certDir 
             $certs = Get-DbaDbCertificate -SqlInstance $SourceInstance -Database master | Where-Object UsedForTde
             foreach ($cert in $certs) {
                 $name = $cert.Name
-                $pwd = ConvertTo-SecureString (New-Guid).Guid -AsPlainText -Force
+                $pwd = ConvertTo-SecureString (New-Guid).Guid -AsPlainText 
                 $pwd | Export-Clixml (Join-Path $certDir "$name.pwd")
-                $server = Connect-DbaInstance -SqlInstance $SourceInstance
-                $server.Databases['master'].Certificates[$name].Export(
+                #$server = Connect-DbaInstance -SqlInstance $SourceInstance
+                $SourceInstance.Databases['master'].Certificates[$name].Export(
                     (Join-Path $certDir "$name.cer"),
                     (Join-Path $certDir "$name.pvk"),
                     $pwd
@@ -471,13 +470,14 @@ function Start-SqlInstanceMigration {
             Destination   = $TargetInstance
             Database      = $scope['Databases']
             WithReplace   = $true
+            BackupRestore = $true
         }
 
         if ($strategy -eq "LastBackup") {
             $dbParams.UseLastBackup = $true
             Write-MigrationEvent "Using last known backups from source msdb history." -Level Info
         } else {
-            $dbParams.BackupRestore = $true
+            
             $dbParams.SharedPath = $SharedPath
             if ($config['MigrationStrategy']['FinalCutover'] -ne $false) {
                 $dbParams.FinalBackup = $true
@@ -498,7 +498,7 @@ function Start-SqlInstanceMigration {
     if ($scope['Credentials']) {
         $success = Invoke-MigrationStep -StepName "Credential Migration" -Action {
             foreach ($c in $scope['Credentials']) {
-                Copy-DbaCredential -Source $SourceInstance -Destination $TargetInstance -Name $c -Force
+                Copy-DbaCredential -Source $SourceInstance -Destination $TargetInstance -Name $c 
             }
         } -SuccessMessage "Migrated credentials."
         if (-not $success) {
@@ -511,7 +511,7 @@ function Start-SqlInstanceMigration {
     if ($scope['AgentProxies']) {
         $success = Invoke-MigrationStep -StepName "Agent Proxy Migration" -Action {
             foreach ($p in $scope['AgentProxies']) {
-                Copy-DbaAgentProxy -Source $SourceInstance -Destination $TargetInstance -Proxy $p -Force
+                Copy-DbaAgentProxy -Source $SourceInstance -Destination $TargetInstance -ProxyAccount $p 
             }
         } -SuccessMessage "Migrated proxies: $($scope['AgentProxies'] -join ', ')"
         if (-not $success) {
@@ -537,21 +537,24 @@ function Start-SqlInstanceMigration {
     # LOGINS
     if ($scope['Logins']) {
         $success = Invoke-MigrationStep -StepName "Login Migration" -Action {
-            Copy-DbaLogin -Source $SourceInstance -Destination $TargetInstance -Include $scope['Logins'] -Force
+            Copy-DbaLogin -Source $SourceInstance -Destination $TargetInstance -Login $scope['Logins'] 
         } -SuccessMessage "Migrated logins."
         if (-not $success) {
             $ErrorTracker['Login'] = $true
             throw "Login migration failed"
         }
     }
+        Write-MigrationEvent $scope['AgentJobs']
 
     # AGENT JOBS
     if ($scope['AgentJobs']) {
         $success = Invoke-MigrationStep -StepName "Agent Job Migration" -Action {
-            Copy-DbaAgentJob -Source $SourceInstance -Destination $TargetInstance -Include $scope['AgentJobs'] -Force
+            Copy-DbaAgentJob -Source $SourceInstance -Destination $TargetInstance -Job $scope['AgentJobs'] 
         } -SuccessMessage "Migrated jobs."
         if (-not $success) {
             $ErrorTracker['Job'] = $true
+                    Write-MigrationEvent $scope['AgentJobs']
+
             throw "Job migration failed"
         }
     }
@@ -560,7 +563,7 @@ function Start-SqlInstanceMigration {
     if ($scope['LinkedServers']) {
         $success = Invoke-MigrationStep -StepName "Linked Server Migration" -Action {
             foreach ($ls in $scope['LinkedServers']) {
-                Copy-DbaLinkedServer -Source $SourceInstance -Destination $TargetInstance -LinkedServer $ls -Force
+                Copy-DbaLinkedServer -Source $SourceInstance -Destination $TargetInstance -LinkedServer $ls 
             }
         } -SuccessMessage "Migrated linked servers."
         if (-not $success) {
@@ -571,11 +574,11 @@ function Start-SqlInstanceMigration {
     # POLICIES
     if ($scope['Policies'] -and $scope['Conditions']) {
         $success = Invoke-MigrationStep -StepName "Policy Migration" -Action {
-            foreach ($cond in $scope['Conditions']) {
-                Copy-DbaPbmCondition -Source $SourceInstance -Destination $TargetInstance -Name $cond -Force
-            }
+            #foreach ($cond in $scope['Conditions']) {
+             #   Copy-DbaPbmCondition -Source $SourceInstance -Destination $TargetInstance -Condition $cond 
+            #}
             foreach ($pol in $scope['Policies']) {
-                Copy-DbaPbmPolicy -Source $SourceInstance -Destination $TargetInstance -Name $pol -Force
+                Copy-DbaPolicyManagement -Source $SourceInstance -Destination $TargetInstance -Policy $pol 
             }
         } -SuccessMessage "Migrated policies and conditions."
         if (-not $success) {
@@ -588,7 +591,7 @@ function Start-SqlInstanceMigration {
     if ($scope['Audits']) {
         $success = Invoke-MigrationStep -StepName "Instance Audit Migration" -Action {
             foreach ($audit in $scope['Audits']) {
-                Copy-DbaInstanceAudit -Source $SourceInstance -Destination $TargetInstance -Name $audit -Force
+                Copy-DbaInstanceAudit -Source $SourceInstance -Destination $TargetInstance -Audit $audit 
             }
         } -SuccessMessage "Migrated instance audits: $($scope['Audits'] -join ', ')"
         if (-not $success) {
@@ -601,7 +604,7 @@ function Start-SqlInstanceMigration {
     if ($scope['AuditSpecs']) {
         $success = Invoke-MigrationStep -StepName "Audit Specification Migration" -Action {
             foreach ($spec in $scope['AuditSpecs']) {
-                Copy-DbaInstanceAuditSpecification -Source $SourceInstance -Destination $TargetInstance -Name $spec -Force
+                Copy-DbaInstanceAuditSpecification -Source $SourceInstance -Destination $TargetInstance -AuditSpecification $spec 
             }
         } -SuccessMessage "Migrated audit specifications: $($scope['AuditSpecs'] -join ', ')"
         if (-not $success) {
