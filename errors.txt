@@ -1,46 +1,6 @@
-PS C:\Users\jf66510\Documents\SqlInstanceMigrator> 
-$dbParams = @{
-    SourceInstance = "s2s007xl\POD21_DEV"
-    TargetInstance = "s2s00euj\MSS66_DEV"
-}                            
-.\Invoke-SqlInstanceMigration.ps1  @dbParams
-
-==================================================
-SQL INSTANCE MIGRATION AUDIT LOG
-Timestamp:      2025-12-15T15:56:57.0513472+01:00
-Run By:         TDA001\jf66510
-Run On:         S2S00EUJ
-Source:         s2s007xl\POD21_DEV
-Target:         s2s00euj\MSS66_DEV
-Config:         
-==================================================
-2025-12-15 15:56:57 [Info] Running pre-migration validation...
-2025-12-15 15:56:57 [Success] ✅ Version compatibility: 15.0.4445 → 16.0.4215
-2025-12-15 15:56:57 [Success] ✅ Edition match: Enterprise Edition: Core-based Licensing (64-bit)
-2025-12-15 15:56:57 [Success] ✅ Collation match: SQL_Latin1_General_CP850_BIN2
-2025-12-15 15:56:57 [Info] Collecting inventory from s2s007xl\POD21_DEV...
-2025-12-15 15:57:02 [Info] Inventory complete.
-2025-12-15 15:57:02 [Info] Using last known backups from source msdb history.
-2025-12-15 15:57:02 [Info] Starting: Database Migration
-cmdlet Copy-DbaDatabase at command pipeline position 1
-Supply values for the following parameters:
-BackupRestore: true
-2025-12-15 15:57:16 [Error] Failed: Database Migration - Cannot process argument transformation on parameter 'BackupRestore'. Cannot convert value "System.String" to type "System.Management.Automation.Swit
-chParameter". Boolean parameters accept only Boolean values and numbers, such as $True, $False, 1 or 0.
-2025-12-15 15:57:16 [Warning] Hint: Check connectivity, permissions, and object existence.
-Database migration failed
-At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:493 char:13
-+             throw "Database migration failed"
-+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : OperationStopped: (Database migration failed:String) [], RuntimeException
-    + FullyQualifiedErrorId : Database migration failed
- 
-
-PS C:\Users\jf66510\Documents\SqlInstanceMigrator> get-dbainstance
-get-dbainstance : The term 'get-dbainstance' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that 
-the path is correct and try again.
-At line:1 char:1
-+ get-dbainstance
-+ ~~~~~~~~~~~~~~~
-    + CategoryInfo          : ObjectNotFound: (get-dbainstance:String) [], CommandNotFoundException
-    + FullyQualifiedErrorId : CommandNotFoundException
+            Copy-DbaDatabase @dbParams
+        } -SuccessMessage "Migrated databases: $($scope['Databases'] -join ', ')"
+        if (-not $success) {
+            $ErrorTracker['Database'] = $true
+            throw "Database migration failed"
+        }
