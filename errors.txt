@@ -1,32 +1,6 @@
-            Copy-DbaDatabase @dbParams
-        } -SuccessMessage "Migrated databases: $($scope['Databases'] -join ', ')"
-        if (-not $success) {
-            $ErrorTracker['Database'] = $true
-            throw "Database migration failed"
-        }
-
-
-# DATABASES — CRITICAL: NO WRAPPING, NO CATCH
-if ($scope['Databases']) {
-    Write-MigrationEvent "Starting: Database Migration" -Level Info
-    $dbParams = @{
-        Source        = $SourceInstance
-        Destination   = $TargetInstance
-        Database      = $scope['Databases']
-        WithReplace   = $true
-    }
-
-    if ($strategy -eq "LastBackup") {
-        $dbParams.UseLastBackup = $true   # ✅ $true, not "true"
-    } else {
-        $dbParams.BackupRestore = $true   # ✅ $true
-        $dbParams.SharedPath = $SharedPath
-        if ($config['MigrationStrategy']['FinalCutover'] -ne $false) {
-            $dbParams.FinalBackup = $true # ✅ $true
-        }
-    }
-
-    # ✅ LET IT THROW — NO Invoke-MigrationStep
-    Copy-DbaDatabase @dbParams
-    Write-MigrationEvent "Migrated databases: $($scope['Databases'] -join ', ')" -Level Success
-}
+Write-MigrationEvent : Cannot bind argument to parameter 'Message' because it is an empty string.
+At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:577 char:30
++         Write-MigrationEvent $scope['AgentJobs']
++                              ~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Write-MigrationEvent], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationErrorEmptyStringNotAllowed,Write-MigrationEvent
