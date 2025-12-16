@@ -1,6 +1,7 @@
-Write-MigrationEvent : Cannot bind argument to parameter 'Message' because it is an empty string.
-At C:\Users\jf66510\Documents\SqlInstanceMigrator\Modules\SqlInstanceMigrator.psm1:577 char:30
-+         Write-MigrationEvent $scope['AgentJobs']
-+                              ~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidData: (:) [Write-MigrationEvent], ParameterBindingValidationException
-    + FullyQualifiedErrorId : ParameterArgumentValidationErrorEmptyStringNotAllowed,Write-MigrationEvent
+Read the start-dbaMigration in the attachment.
+I want to amend it so that:
+For All object types, give the option to select a list of these objetc instead of moving all.
+No regression is allowed.
+All : If the object type param is omitted, take all objects of that type
+nothing: put it in the exclude list
+Custom: copy a comma separated list of objects
