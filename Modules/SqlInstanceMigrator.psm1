@@ -469,7 +469,7 @@ function Start-SqlInstanceMigration {
             Source        = $SourceInstance
             Destination   = $TargetInstance
             Database      = $scope['Databases']
-            WithReplace   = $true
+            WithReplace   = $false
             BackupRestore = $true
         }
 
@@ -520,7 +520,7 @@ function Start-SqlInstanceMigration {
         }
     }
 
-    # CLR
+    # CLR Assemblies
     if ($inventory['ClrDatabases'] -and $config['DatabaseObjects']['EnableClr']) {
         $clrToEnable = $inventory['ClrDatabases'] | Where-Object { $_ -in $scope['Databases'] }
         if ($clrToEnable) {
@@ -600,7 +600,7 @@ function Start-SqlInstanceMigration {
         }
     }
 
-    # AUDIT SPECIFICATIONS
+    # AUDIT SPECIFICATIONS.....we need aud+auditspec...we can simplify the hash....
     if ($scope['AuditSpecs']) {
         $success = Invoke-MigrationStep -StepName "Audit Specification Migration" -Action {
             foreach ($spec in $scope['AuditSpecs']) {
