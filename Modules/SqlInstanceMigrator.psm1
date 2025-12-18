@@ -88,26 +88,10 @@ function Get-SqlInstanceInventory {
         Conditions       = @((Get-DbaPbmCondition -SqlInstance $SqlInstance -ErrorAction SilentlyContinue).Name)
         RegisteredServers= @((Get-DbaRegisteredServer -SqlInstance $SqlInstance -ErrorAction SilentlyContinue).Name)
         XESessions       = @((Get-DbaXESession -SqlInstance $SqlInstance -ErrorAction SilentlyContinue).Name)
-        Audits           = @()
-        AuditSpecs       = @()
+        Audits           = @(Get-DbaInstanceAudit -SqlInstance $SqlInstance)
+        AuditSpecs       = @(Get-DbaInstanceAuditSpecification -SqlInstance $SqlInstance)
     }
 
-    # ✅ CORRECT CMDLETS: InstanceAudit & InstanceAuditSpecification
-    if (Get-Command Get-DbaInstanceAudit -ErrorAction SilentlyContinue) {
-        try {
-            $inventory['Audits'] = @((Get-DbaInstanceAudit -SqlInstance $SqlInstance -ErrorAction Stop).Name)
-        } catch {
-            Write-MigrationEvent "Warning: Could not retrieve instance audits." -Level Warning
-        }
-    }
-
-    if (Get-Command Get-DbaInstanceAuditSpecification -ErrorAction SilentlyContinue) {
-        try {
-            $inventory['AuditSpecs'] = @((Get-DbaInstanceAuditSpecification -SqlInstance $SqlInstance -ErrorAction Stop).Name)
-        } catch {
-            Write-MigrationEvent "Warning: Could not retrieve audit specifications." -Level Warning
-        }
-    }
 
     # ✅ USE BRACKET NOTATION FOR HASHTABLE
     try {
@@ -117,6 +101,23 @@ function Get-SqlInstanceInventory {
         Write-MigrationEvent "Warning: Could not check TDE status." -Level Warning
     }
 
+
+
+
+    <# Use dbatools
+    Copy-DbaDbAssembly
+    [-Source] <DbaInstanceParameter>
+    [[-SourceSqlCredential] <PSCredential>]
+    [-Destination] <DbaInstanceParameter[]>
+    [[-DestinationSqlCredential] <PSCredential>]
+    [[-Assembly] <Object[]>]
+    [[-ExcludeAssembly] <Object[]>]
+    [-Force]
+    [-EnableException]
+    [-WhatIf]
+    [-Confirm]
+    [<CommonParameters>]
+    #>
     $clrDbs = @()
     foreach ($db in $inventory['Databases']) {
         try {
@@ -169,6 +170,10 @@ function Resolve-MigrationScope {
     }
 }
 
+
+<#
+Do not use script block.....just call the right copy command
+#>
 function Invoke-MigrationStep {
     [CmdletBinding()]
     param(
@@ -197,10 +202,6 @@ function Invoke-PreMigrationValidation {
     )
 
     Write-MigrationEvent "Running pre-migration validation..." -Level Info
-
-    # ✅ Use Get-DbaInstance (no -Name parameter)
-    #$SourceInstance = Connect-DbaInstance -SqlInstance $SourceInstance
-    #$TargetInstance = Connect-DbaInstance -SqlInstance $TargetInstance
 
     $sourceVersion = if ($SourceInstance.Version) { $SourceInstance.Version.ToString() } else { "Unknown" }
     $targetVersion = if ($TargetInstance.Version) { $TargetInstance.Version.ToString() } else { "Unknown" }
