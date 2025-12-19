@@ -1,7 +1,78 @@
-Read the start-dbaMigration in the attachment.
-I want to amend it so that:
-For All object types, give the option to select a list of these objetc instead of moving all.
-No regression is allowed.
-All : If the object type param is omitted, take all objects of that type
-nothing: put it in the exclude list
-Custom: copy a comma separated list of objects
+param(
+    # Migration Strategy
+    [string]$MigrationMode = "FreshBackup",
+    [bool]$FinalCutover = $true,
+    
+    # Databases
+    [string]$DatabasesMode = "Custom",
+    [string[]]$IncludeDatabases = @(),
+    [string[]]$ExcludeDatabases = @("tempdb", "model", "msdb", "distribution", "SSISDB", "ReportServer", "ReportServerTempDB"),
+    
+    # Logins
+    [string]$LoginsMode = "Custom",
+    [string[]]$IncludeLogins = @(),
+    [string[]]$ExcludeLogins = @("##MS_*", "sa"),
+    
+    # TDE & Security
+    [bool]$IncludeTDECertificates = $true,
+    [bool]$IncludeDatabaseMasterKeys = $true,
+    [bool]$EnableClr = $true,
+    [bool]$EnableServiceBroker = $true,
+    
+    # Special Features
+    [bool]$IncludeSSISDB = $false,
+    [bool]$IncludeReplication = $false,
+    
+    # Server Objects (true/false for each)
+    [bool]$IncludeDatabaseMail = $true,
+    [bool]$IncludeSpConfigure = $true,
+    [bool]$IncludeServerAuditSpecs = $true,
+    [bool]$IncludeResourceGovernor = $true,
+    [bool]$IncludeCustomErrors = $true,
+    [bool]$IncludeCentralManagementServer = $true,
+    [bool]$IncludeServerTriggers = $false
+)
+
+# Build the configuration object from parameters
+$config = @{
+    MigrationStrategy = @{
+        Mode = $MigrationMode
+        FinalCutover = $FinalCutover
+    }
+    Databases = @{
+        Mode = $DatabasesMode
+        IncludeList = $IncludeDatabases
+        ExcludeList = $ExcludeDatabases
+    }
+    ServerObjects = @{
+        Logins = @{ Mode = $LoginsMode; IncludeList = $IncludeLogins; ExcludeList = $ExcludeLogins }
+        Credentials = @{ Mode = "Custom"; IncludeList = @(); ExcludeList = @() }
+        AgentProxies = @{ Mode = "Custom"; IncludeList = @(); ExcludeList = @() }
+        LinkedServers = @{ Mode = "Custom"; IncludeList = @(); ExcludeList = @() }
+        AgentJobs = @{ Mode = "Custom"; IncludeList = @(); ExcludeList = @() }
+        DatabaseMail = @{ Mode = if ($IncludeDatabaseMail) { "All" } else { "None" } }
+        SpConfigure = @{ Mode = if ($IncludeSpConfigure) { "All" } else { "None" } }
+        Audits = @{ Mode = "Custom"; IncludeList = @(); ExcludeList = @() }
+        ServerAuditSpecs = @{ Mode = if ($IncludeServerAuditSpecs) { "All" } else { "None" } }
+        ResourceGovernor = @{ Mode = if ($IncludeResourceGovernor) { "All" } else { "None" } }
+        CustomErrors = @{ Mode = if ($IncludeCustomErrors) { "All" } else { "None" } }
+        XESessions = @{ Mode = "Custom"; IncludeList = @(); ExcludeList = @() }
+        Endpoints = @{ Mode = "Custom"; IncludeList = @(); ExcludeList = @() }
+        ServerTriggers = @{ Mode = if ($IncludeServerTriggers) { "All" } else { "None" } }
+        PolicyManagement = @{ Mode = "Custom"; IncludeList = @(); ExcludeList = @() }
+        CentralManagementServer = @{ Mode = if ($IncludeCentralManagementServer) { "All" } else { "None" } }
+    }
+    DatabaseObjects = @{
+        TDECertificates = @{ Mode = if ($IncludeTDECertificates) { "All" } else { "None" } }
+        DatabaseMasterKeys = @{ Mode = if ($IncludeDatabaseMasterKeys) { "All" } else { "None" } }
+        EnableClr = $EnableClr
+        EnableServiceBroker = $EnableServiceBroker
+    }
+    Special = @{
+        SSISDB = $IncludeSSISDB
+        Replication = $IncludeReplication
+    }
+}
+
+# Use the config
+$config | ConvertTo-Json -Depth 10
